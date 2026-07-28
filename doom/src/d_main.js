@@ -17,6 +17,8 @@ import {
   R_FlatNumForName,
   R_PrecacheLevel,
   R_ApplyLiveWallTextureTest,
+  R_ExportLiveWallTexture,
+  R_ApplyLiveWallTexturePixels,
   R_RestoreLiveWallTexture,
 } from './r_data.js';
 import { P_Random } from './m_random.js';
@@ -445,6 +447,14 @@ export async function D_DoomMain() {
   R_InitData();
   window.__doomLiveTextureApply = (name = 'COMPUTE2') =>
     R_ApplyLiveWallTextureTest(name);
+  window.__doomLiveTextureExport = (name = 'COMPUTE2') =>
+    R_ExportLiveWallTexture(name);
+  window.__doomLiveTextureApplyPixels = (
+    name = 'COMPUTE2',
+    width,
+    height,
+    rgba
+  ) => R_ApplyLiveWallTexturePixels(name, width, height, rgba);
   window.__doomLiveTextureRestore = (name = 'COMPUTE2') =>
     R_RestoreLiveWallTexture(name);
   (await import('./r_data.js')).R_InitDefaultAnims();

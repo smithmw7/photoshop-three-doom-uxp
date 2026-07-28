@@ -91,19 +91,26 @@ The Boot log shows the WebView load sequence, embedded WAD byte count, renderer
 creation, startup completion, and any errors. Click **Copy log** to place all
 visible log lines on the system clipboard. The log text is also selectable.
 
-## Experimental live texture test
+## Experimental Photoshop texture editor
 
 Start a new game on E1M1. The `COMPUTE2` wall texture is directly ahead of the
 player at the opening spawn.
 
-Click **Apply test texture** to replace every live wall mesh using `COMPUTE2`
-with a bright magenta/cyan checker. Click **Restore original** to put the
-original indexed pixels back. Both operations mutate the existing cached
-Three.js `DataTexture` and upload it on the next frame; the game, map, and
-WebView do not reload.
+1. Click **Open Texture**. The plugin creates a 256×56, 8-bit RGB Photoshop
+   document containing `COMPUTE2`, an original texture layer, and an empty
+   **Your edits** pixel layer.
+2. Edit that document with normal Photoshop layers.
+3. Click **Apply Texture**. The plugin reads the document composite, converts
+   its RGB pixels to the nearest colors in Doom's original 256-color palette,
+   and updates every live wall mesh using `COMPUTE2`.
+4. Click **Restore original** to restore the indexed pixels loaded from the
+   WAD.
 
-This branch is a deliberately small proof before connecting the same runtime
-texture endpoint to editable Photoshop layer pixels.
+The editable document stays RGB because Photoshop's Indexed Color mode limits
+layered editing. Palette conversion happens only when applying the composite
+to the game. The editable document is never flattened, converted, closed, or
+saved automatically. Apply and Restore mutate the existing cached Three.js
+`DataTexture`; the game, map, and WebView do not reload.
 
 ## Project layout
 

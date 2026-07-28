@@ -106,11 +106,19 @@
   window.__doomBenchmarkReportLog = reportLog;
   window.__doomBenchmarkReportError = reportError;
 
-  function runLiveTextureTest(action, textureName = "COMPUTE2") {
-    const apply = action === "apply";
-    const operation = apply
-      ? window.__doomLiveTextureApply
-      : window.__doomLiveTextureRestore;
+  function runLiveTextureTest(
+    action,
+    textureName = "COMPUTE2",
+    payload = {}
+  ) {
+    let operation;
+    if (action === "apply") {
+      operation = window.__doomLiveTextureApply;
+    } else if (action === "applyPixels") {
+      operation = window.__doomLiveTextureApplyPixels;
+    } else {
+      operation = window.__doomLiveTextureRestore;
+    }
     let result;
     if (typeof operation !== "function") {
       result = {
@@ -120,7 +128,14 @@
       };
     } else {
       try {
-        result = operation(textureName);
+        result = action === "applyPixels"
+          ? operation(
+            textureName,
+            payload.width,
+            payload.height,
+            payload.rgba
+          )
+          : operation(textureName);
       } catch (error) {
         result = {
           ok: false,
@@ -135,11 +150,22 @@
     reportLog(
       result.ok ? "info" : "warn",
       result.ok
-        ? (result.active ? "Live texture test applied" : "Live texture restored")
+        ? (
+          result.active
+            ? (
+              result.source === "photoshop"
+                ? "Photoshop texture applied"
+                : "Live texture test applied"
+            )
+            : "Live texture restored"
+        )
         : "Live texture test failed",
       result.ok
         ? `${result.name} · ${result.width}x${result.height}` +
-          ` · ${result.meshes} meshes · no reload`
+          ` · ${result.meshes} meshes · no reload` +
+          (result.paletteColors
+            ? ` · ${result.paletteColors} palette colors`
+            : "")
         : result.error
     );
     postToHost({
@@ -149,7 +175,40 @@
     return result;
   }
 
+  function exportLiveTexture(textureName = "COMPUTE2", requestId) {
+    let result;
+    if (typeof window.__doomLiveTextureExport !== "function") {
+      result = {
+        ok: false,
+        error: "Doom texture system is not ready"
+      };
+    } else {
+      try {
+        result = window.__doomLiveTextureExport(textureName);
+      } catch (error) {
+        result = {
+          ok: false,
+          error: formatDetails(error)
+        };
+      }
+    }
+    reportLog(
+      result.ok ? "info" : "warn",
+      result.ok ? "Texture exported to Photoshop" : "Texture export failed",
+      result.ok
+        ? `${result.name} · ${result.width}x${result.height}`
+        : result.error
+    );
+    postToHost({
+      type: "liveTextureExport",
+      requestId,
+      result
+    });
+    return result;
+  }
+
   window.__doomBenchmarkRunLiveTextureTest = runLiveTextureTest;
+  window.__doomBenchmarkExportLiveTexture = exportLiveTexture;
 
   window.addEventListener("message", (event) => {
     const data = event.data;
@@ -161,7 +220,11 @@
     ) {
       return;
     }
-    runLiveTextureTest(data.action, data.texture);
+    if (data.action === "export") {
+      exportLiveTexture(data.texture, data.requestId);
+      return;
+    }
+    runLiveTextureTest(data.action, data.texture, data);
   });
 
   if (typeof window.fetch === "function") {

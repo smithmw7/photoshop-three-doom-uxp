@@ -38,6 +38,7 @@ export let playpal_rgba = null;
 const _flatTextureCache    = new Map(); // flatnum -> THREE.DataTexture
 const _textureTextureCache = new Map(); // texturenum -> THREE.DataTexture
 const _liveTextureOriginals = new Map(); // texturenum -> Uint8Array
+const _paletteMatchCache = new Map(); // 24-bit RGB -> Doom palette index
 
 // ---------- R_FlatNumForName ----------
 export function R_FlatNumForName(name) {
@@ -273,6 +274,11 @@ export function R_GetWallTexture(texnum) {
 }
 
 function closestPaletteIndex(red, green, blue) {
+  const key = (red << 16) | (green << 8) | blue;
+  const cached = _paletteMatchCache.get(key);
+  if (cached !== undefined) {
+    return cached;
+  }
   let closest = 0;
   let closestDistance = Number.POSITIVE_INFINITY;
   for (let index = 0; index < 256; index++) {
@@ -286,6 +292,7 @@ function closestPaletteIndex(red, green, blue) {
       closestDistance = distance;
     }
   }
+  _paletteMatchCache.set(key, closest);
   return closest;
 }
 
@@ -335,6 +342,88 @@ export function R_ApplyLiveWallTextureTest(name) {
   }
   texture.needsUpdate = true;
   return liveTextureResult(texnum, true);
+}
+
+export function R_ExportLiveWallTexture(name) {
+  const texnum = R_CheckTextureNumForName(String(name).toUpperCase());
+  if (texnum < 0) {
+    return { ok: false, error: `Texture ${name} not found` };
+  }
+  const texture = R_GetWallTexture(texnum);
+  const data = texture.image.data;
+  const width = texture.image.width;
+  const height = texture.image.height;
+  const rgba = new Uint8Array(width * height * 4);
+  for (let pixel = 0; pixel < width * height; pixel++) {
+    const paletteIndex = data[pixel * 2 + 0];
+    const paletteOffset = paletteIndex * 4;
+    rgba[pixel * 4 + 0] = playpal_rgba[paletteOffset + 0];
+    rgba[pixel * 4 + 1] = playpal_rgba[paletteOffset + 1];
+    rgba[pixel * 4 + 2] = playpal_rgba[paletteOffset + 2];
+    rgba[pixel * 4 + 3] = data[pixel * 2 + 1];
+  }
+  return {
+    ok: true,
+    name: textures[texnum].name,
+    width,
+    height,
+    rgba: Array.from(rgba)
+  };
+}
+
+export function R_ApplyLiveWallTexturePixels(name, width, height, rgba) {
+  const texnum = R_CheckTextureNumForName(String(name).toUpperCase());
+  if (texnum < 0) {
+    return { ok: false, active: false, error: `Texture ${name} not found` };
+  }
+  const texture = R_GetWallTexture(texnum);
+  const expectedWidth = texture.image.width;
+  const expectedHeight = texture.image.height;
+  if (width !== expectedWidth || height !== expectedHeight) {
+    return {
+      ok: false,
+      active: false,
+      error:
+        `Texture ${name} must be ${expectedWidth}x${expectedHeight}; ` +
+        `received ${width}x${height}`
+    };
+  }
+  const expectedLength = width * height * 4;
+  if (!rgba || rgba.length !== expectedLength) {
+    return {
+      ok: false,
+      active: false,
+      error:
+        `Texture ${name} requires ${expectedLength} RGBA values; ` +
+        `received ${rgba ? rgba.length : 0}`
+    };
+  }
+
+  const data = texture.image.data;
+  if (!_liveTextureOriginals.has(texnum)) {
+    _liveTextureOriginals.set(texnum, new Uint8Array(data));
+  }
+  const usedPaletteIndices = new Set();
+  for (let pixel = 0; pixel < width * height; pixel++) {
+    const source = pixel * 4;
+    const alpha = rgba[source + 3];
+    const paletteIndex = closestPaletteIndex(
+      rgba[source + 0],
+      rgba[source + 1],
+      rgba[source + 2]
+    );
+    data[pixel * 2 + 0] = paletteIndex;
+    data[pixel * 2 + 1] = alpha;
+    if (alpha > 0) {
+      usedPaletteIndices.add(paletteIndex);
+    }
+  }
+  texture.needsUpdate = true;
+  return {
+    ...liveTextureResult(texnum, true),
+    source: "photoshop",
+    paletteColors: usedPaletteIndices.size
+  };
 }
 
 export function R_RestoreLiveWallTexture(name) {

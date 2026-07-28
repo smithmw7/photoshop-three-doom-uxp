@@ -27500,9 +27500,11 @@ void main() {
   __export(r_data_exports, {
     R_AddAnim: () => R_AddAnim,
     R_AnimateTextures: () => R_AnimateTextures,
+    R_ApplyLiveWallTexturePixels: () => R_ApplyLiveWallTexturePixels,
     R_ApplyLiveWallTextureTest: () => R_ApplyLiveWallTextureTest,
     R_CheckTextureNumForName: () => R_CheckTextureNumForName,
     R_ClearMeshRegistry: () => R_ClearMeshRegistry,
+    R_ExportLiveWallTexture: () => R_ExportLiveWallTexture,
     R_FlatNumForName: () => R_FlatNumForName,
     R_GetFlatTexture: () => R_GetFlatTexture,
     R_GetWallTexture: () => R_GetWallTexture,
@@ -27720,6 +27722,11 @@ void main() {
     return tex;
   }
   function closestPaletteIndex(red, green, blue) {
+    const key = red << 16 | green << 8 | blue;
+    const cached = _paletteMatchCache.get(key);
+    if (cached !== void 0) {
+      return cached;
+    }
     let closest = 0;
     let closestDistance = Number.POSITIVE_INFINITY;
     for (let index = 0; index < 256; index++) {
@@ -27733,6 +27740,7 @@ void main() {
         closestDistance = distance;
       }
     }
+    _paletteMatchCache.set(key, closest);
     return closest;
   }
   function liveTextureResult(texnum, active) {
@@ -27774,6 +27782,81 @@ void main() {
     }
     texture.needsUpdate = true;
     return liveTextureResult(texnum, true);
+  }
+  function R_ExportLiveWallTexture(name) {
+    const texnum = R_CheckTextureNumForName(String(name).toUpperCase());
+    if (texnum < 0) {
+      return { ok: false, error: `Texture ${name} not found` };
+    }
+    const texture = R_GetWallTexture(texnum);
+    const data = texture.image.data;
+    const width = texture.image.width;
+    const height = texture.image.height;
+    const rgba = new Uint8Array(width * height * 4);
+    for (let pixel = 0; pixel < width * height; pixel++) {
+      const paletteIndex = data[pixel * 2 + 0];
+      const paletteOffset = paletteIndex * 4;
+      rgba[pixel * 4 + 0] = playpal_rgba[paletteOffset + 0];
+      rgba[pixel * 4 + 1] = playpal_rgba[paletteOffset + 1];
+      rgba[pixel * 4 + 2] = playpal_rgba[paletteOffset + 2];
+      rgba[pixel * 4 + 3] = data[pixel * 2 + 1];
+    }
+    return {
+      ok: true,
+      name: textures[texnum].name,
+      width,
+      height,
+      rgba: Array.from(rgba)
+    };
+  }
+  function R_ApplyLiveWallTexturePixels(name, width, height, rgba) {
+    const texnum = R_CheckTextureNumForName(String(name).toUpperCase());
+    if (texnum < 0) {
+      return { ok: false, active: false, error: `Texture ${name} not found` };
+    }
+    const texture = R_GetWallTexture(texnum);
+    const expectedWidth = texture.image.width;
+    const expectedHeight = texture.image.height;
+    if (width !== expectedWidth || height !== expectedHeight) {
+      return {
+        ok: false,
+        active: false,
+        error: `Texture ${name} must be ${expectedWidth}x${expectedHeight}; received ${width}x${height}`
+      };
+    }
+    const expectedLength = width * height * 4;
+    if (!rgba || rgba.length !== expectedLength) {
+      return {
+        ok: false,
+        active: false,
+        error: `Texture ${name} requires ${expectedLength} RGBA values; received ${rgba ? rgba.length : 0}`
+      };
+    }
+    const data = texture.image.data;
+    if (!_liveTextureOriginals.has(texnum)) {
+      _liveTextureOriginals.set(texnum, new Uint8Array(data));
+    }
+    const usedPaletteIndices = /* @__PURE__ */ new Set();
+    for (let pixel = 0; pixel < width * height; pixel++) {
+      const source = pixel * 4;
+      const alpha = rgba[source + 3];
+      const paletteIndex = closestPaletteIndex(
+        rgba[source + 0],
+        rgba[source + 1],
+        rgba[source + 2]
+      );
+      data[pixel * 2 + 0] = paletteIndex;
+      data[pixel * 2 + 1] = alpha;
+      if (alpha > 0) {
+        usedPaletteIndices.add(paletteIndex);
+      }
+    }
+    texture.needsUpdate = true;
+    return {
+      ...liveTextureResult(texnum, true),
+      source: "photoshop",
+      paletteColors: usedPaletteIndices.size
+    };
   }
   function R_RestoreLiveWallTexture(name) {
     const texnum = R_CheckTextureNumForName(String(name).toUpperCase());
@@ -27864,7 +27947,7 @@ void main() {
       }
     }
   }
-  var firstflat, lastflat, numflats, firstpatch, lastpatch, numpatches, firstspritelump, lastspritelump, numspritelumps, numtextures, textures, texturewidthmask, textureheight, texturetranslation, flattranslation, spritewidth, spriteoffset, spritetopoffset, colormaps, playpal_rgba, _flatTextureCache, _textureTextureCache, _liveTextureOriginals, _animatedTextures, _meshesByTexnum, _meshesByFlatnum;
+  var firstflat, lastflat, numflats, firstpatch, lastpatch, numpatches, firstspritelump, lastspritelump, numspritelumps, numtextures, textures, texturewidthmask, textureheight, texturetranslation, flattranslation, spritewidth, spriteoffset, spritetopoffset, colormaps, playpal_rgba, _flatTextureCache, _textureTextureCache, _liveTextureOriginals, _paletteMatchCache, _animatedTextures, _meshesByTexnum, _meshesByFlatnum;
   var init_r_data = __esm({
     "doom/src/r_data.js"() {
       init_three_module();
@@ -27896,6 +27979,7 @@ void main() {
       _flatTextureCache = /* @__PURE__ */ new Map();
       _textureTextureCache = /* @__PURE__ */ new Map();
       _liveTextureOriginals = /* @__PURE__ */ new Map();
+      _paletteMatchCache = /* @__PURE__ */ new Map();
       _animatedTextures = [];
       _meshesByTexnum = /* @__PURE__ */ new Map();
       _meshesByFlatnum = /* @__PURE__ */ new Map();
@@ -67283,6 +67367,8 @@ void main() {
     I_SetPalette(playpal);
     R_InitData();
     window.__doomLiveTextureApply = (name = "COMPUTE2") => R_ApplyLiveWallTextureTest(name);
+    window.__doomLiveTextureExport = (name = "COMPUTE2") => R_ExportLiveWallTexture(name);
+    window.__doomLiveTextureApplyPixels = (name = "COMPUTE2", width, height, rgba) => R_ApplyLiveWallTexturePixels(name, width, height, rgba);
     window.__doomLiveTextureRestore = (name = "COMPUTE2") => R_RestoreLiveWallTexture(name);
     (await Promise.resolve().then(() => (init_r_data(), r_data_exports))).R_InitDefaultAnims();
     const RT = await Promise.resolve().then(() => (init_r_things(), r_things_exports));
