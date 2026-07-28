@@ -112,6 +112,10 @@ to the game. The editable document is never flattened, converted, closed, or
 saved automatically. Apply and Restore mutate the existing cached Three.js
 `DataTexture`; the game, map, and WebView do not reload.
 
+Photoshop's host requires the composite `imaging.getPixels()` read to execute
+inside a short modal scope. The pixel buffer is copied and disposed before the
+modal scope ends; palette conversion and the WebView update happen afterward.
+
 ## Project layout
 
 ```text

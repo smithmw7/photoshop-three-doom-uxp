@@ -187,25 +187,32 @@ async function applyTextureDocument() {
 
   textureTestStatus.textContent =
     `Reading ${textureDocument.name} composite pixels…`;
-  const imageObject = await imaging.getPixels({
-    documentID: document.id,
-    sourceBounds: {
-      left: 0,
-      top: 0,
-      width: textureDocument.width,
-      height: textureDocument.height
-    }
-  });
   let rgba;
-  try {
-    rgba = await normalizeCompositePixels(
-      imageObject,
-      textureDocument.width,
-      textureDocument.height
-    );
-  } finally {
-    imageObject.imageData.dispose();
-  }
+  await core.executeAsModal(async () => {
+    const imageObject = await imaging.getPixels({
+      documentID: document.id,
+      sourceBounds: {
+        left: 0,
+        top: 0,
+        width: textureDocument.width,
+        height: textureDocument.height
+      },
+      colorSpace: "RGB",
+      componentSize: 8
+    });
+    try {
+      rgba = await normalizeCompositePixels(
+        imageObject,
+        textureDocument.width,
+        textureDocument.height
+      );
+    } finally {
+      imageObject.imageData.dispose();
+    }
+  }, {
+    commandName: `Read Doom texture ${textureDocument.name}`,
+    timeOut: 5000
+  });
   textureTestStatus.textContent =
     `Quantizing ${textureDocument.name} to the Doom palette…`;
   sendTextureAction("applyPixels", {
