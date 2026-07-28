@@ -6,11 +6,28 @@ const statusValue = document.getElementById("statusValue");
 const fpsValue = document.getElementById("fpsValue");
 const p95Value = document.getElementById("p95Value");
 const droppedValue = document.getElementById("droppedValue");
+const textureTestStatus = document.getElementById("textureTestStatus");
+const applyTextureButton = document.getElementById("applyTextureButton");
+const restoreTextureButton = document.getElementById("restoreTextureButton");
 const diagnosticLog = document.getElementById("diagnosticLog");
 const copyLogButton = document.getElementById("copyLogButton");
 const clearLogButton = document.getElementById("clearLogButton");
 const logLines = [];
 let copyFeedbackTimer = null;
+const LIVE_TEXTURE_NAME = "COMPUTE2";
+
+function sendTextureTestAction(action) {
+  textureTestStatus.textContent =
+    action === "apply"
+      ? `Applying checker to ${LIVE_TEXTURE_NAME}…`
+      : `Restoring ${LIVE_TEXTURE_NAME}…`;
+  doomView.postMessage({
+    source: "three-doom-host",
+    type: "liveTextureTest",
+    action,
+    texture: LIVE_TEXTURE_NAME
+  });
+}
 
 function appendLog(level, message, details) {
   const timestamp = new Date().toISOString().slice(11, 23);
@@ -88,6 +105,30 @@ window.addEventListener("message", (event) => {
     fpsValue.textContent = `${data.fps.toFixed(1)} FPS`;
     p95Value.textContent = `P95 ${data.p95Ms.toFixed(1)} ms`;
     droppedValue.textContent = `Dropped ${data.droppedFrames}`;
+    return;
+  }
+
+  if (data.type === "liveTextureTest") {
+    const result = data.result || {};
+    if (result.ok) {
+      const actionLabel = result.active ? "Test texture active" : "Original restored";
+      textureTestStatus.textContent =
+        `${actionLabel} · ${result.name} ${result.width}×${result.height}` +
+        ` · ${result.meshes} live wall mesh${result.meshes === 1 ? "" : "es"}`;
+      appendLog(
+        "info",
+        actionLabel,
+        `${result.name} · no WebView reload`
+      );
+    } else {
+      textureTestStatus.textContent =
+        `Texture test failed: ${result.error || "unknown error"}`;
+      appendLog(
+        "error",
+        "Live texture test failed",
+        result.error || "unknown error"
+      );
+    }
   }
 });
 
@@ -95,6 +136,14 @@ reloadButton.addEventListener("click", () => {
   resetStatus();
   appendLog("info", "Reload requested");
   doomView.src = `plugin:/doom/index.html?reload=${Date.now()}`;
+});
+
+applyTextureButton.addEventListener("click", () => {
+  sendTextureTestAction("apply");
+});
+
+restoreTextureButton.addEventListener("click", () => {
+  sendTextureTestAction("restore");
 });
 
 copyLogButton.addEventListener("click", async () => {

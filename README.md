@@ -36,6 +36,7 @@ WebGL. This plugin runs the game in a local UXP WebView and provides:
 - WebGL version and retained-frame status
 - A visible boot log with a one-click **Copy log** button
 - WebView load, startup, resource, JavaScript, and stalled-boot diagnostics
+- An experimental no-reload wall-texture Apply/Restore proof
 
 No remote network access is required while the plugin is running.
 
@@ -89,6 +90,20 @@ The toolbar reports:
 The Boot log shows the WebView load sequence, embedded WAD byte count, renderer
 creation, startup completion, and any errors. Click **Copy log** to place all
 visible log lines on the system clipboard. The log text is also selectable.
+
+## Experimental live texture test
+
+Start a new game on E1M1. The `COMPUTE2` wall texture is directly ahead of the
+player at the opening spawn.
+
+Click **Apply test texture** to replace every live wall mesh using `COMPUTE2`
+with a bright magenta/cyan checker. Click **Restore original** to put the
+original indexed pixels back. Both operations mutate the existing cached
+Three.js `DataTexture` and upload it on the next frame; the game, map, and
+WebView do not reload.
+
+This branch is a deliberately small proof before connecting the same runtime
+texture endpoint to editable Photoshop layer pixels.
 
 ## Project layout
 

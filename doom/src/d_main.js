@@ -11,7 +11,14 @@ import { SCREENWIDTH, SCREENHEIGHT, gamestate_t, GameMode_t, TICRATE } from './d
 import { mus_intro, mus_dm2ttl } from './sounds.js';
 import * as doomstat from './doomstat.js';
 import { gamestate, set_gamestate, set_gamemode, set_devparm, set_nomonsters, set_respawnparm, set_fastparm, set_gameepisode, set_gamemap, set_gameskill } from './doomstat.js';
-import { R_InitData, R_TextureNumForName, R_FlatNumForName, R_PrecacheLevel } from './r_data.js';
+import {
+  R_InitData,
+  R_TextureNumForName,
+  R_FlatNumForName,
+  R_PrecacheLevel,
+  R_ApplyLiveWallTextureTest,
+  R_RestoreLiveWallTexture,
+} from './r_data.js';
 import { P_Random } from './m_random.js';
 import { P_SetupLevel, P_SetExternals as P_SetupSetExternals } from './p_setup.js';
 import { R_NewMap, R_RenderPlayerView, R_SetupFrame } from './r_main.js';
@@ -436,6 +443,10 @@ export async function D_DoomMain() {
 
   // Init rendering data (textures/flats/sprites/colormaps).
   R_InitData();
+  window.__doomLiveTextureApply = (name = 'COMPUTE2') =>
+    R_ApplyLiveWallTextureTest(name);
+  window.__doomLiveTextureRestore = (name = 'COMPUTE2') =>
+    R_RestoreLiveWallTexture(name);
   (await import('./r_data.js')).R_InitDefaultAnims();
   // Build sprite definitions (one entry per SPR_* name).
   const RT = await import('./r_things.js');
@@ -696,6 +707,20 @@ export async function D_DoomMain() {
   } else {
     // Kick off the title screen demo loop.
     D_StartTitle();
+  }
+  if (M_CheckParm('-texturetest') !== 0) {
+    if (typeof window.__doomBenchmarkRunLiveTextureTest === 'function') {
+      window.__doomBenchmarkRunLiveTextureTest('apply', 'COMPUTE2');
+    } else {
+      const result = R_ApplyLiveWallTextureTest('COMPUTE2');
+      window.__doomBenchmarkReportLog?.(
+        result.ok ? 'info' : 'warn',
+        result.ok ? 'Live texture test applied' : 'Live texture test failed',
+        result.ok
+          ? `${result.name} · ${result.width}x${result.height} · ${result.meshes} meshes`
+          : result.error
+      );
+    }
   }
   if (
     typeof window !== 'undefined' &&

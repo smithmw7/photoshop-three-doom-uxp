@@ -37,6 +37,7 @@ export let playpal_rgba = null;
 // ---------- Three.js cached resources (built lazily) ----------
 const _flatTextureCache    = new Map(); // flatnum -> THREE.DataTexture
 const _textureTextureCache = new Map(); // texturenum -> THREE.DataTexture
+const _liveTextureOriginals = new Map(); // texturenum -> Uint8Array
 
 // ---------- R_FlatNumForName ----------
 export function R_FlatNumForName(name) {
@@ -269,6 +270,90 @@ export function R_GetWallTexture(texnum) {
     _textureTextureCache.set(texnum, tex);
   }
   return tex;
+}
+
+function closestPaletteIndex(red, green, blue) {
+  let closest = 0;
+  let closestDistance = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < 256; index++) {
+    const offset = index * 4;
+    const dr = playpal_rgba[offset + 0] - red;
+    const dg = playpal_rgba[offset + 1] - green;
+    const db = playpal_rgba[offset + 2] - blue;
+    const distance = dr * dr + dg * dg + db * db;
+    if (distance < closestDistance) {
+      closest = index;
+      closestDistance = distance;
+    }
+  }
+  return closest;
+}
+
+function liveTextureResult(texnum, active) {
+  const definition = textures[texnum];
+  const meshes = _meshesByTexnum.get(texnum);
+  return {
+    ok: true,
+    active,
+    name: definition.name,
+    width: definition.width,
+    height: definition.height,
+    meshes: meshes === undefined ? 0 : meshes.size
+  };
+}
+
+// Proof-of-concept live wall replacement. The cached RG8 DataTexture is
+// mutated in place, so every existing material that references it sees the
+// change on the next WebGL upload without rebuilding the map or WebView.
+export function R_ApplyLiveWallTextureTest(name) {
+  const texnum = R_CheckTextureNumForName(String(name).toUpperCase());
+  if (texnum < 0) {
+    return { ok: false, active: false, error: `Texture ${name} not found` };
+  }
+  const texture = R_GetWallTexture(texnum);
+  const data = texture.image.data;
+  if (!_liveTextureOriginals.has(texnum)) {
+    _liveTextureOriginals.set(texnum, new Uint8Array(data));
+  }
+
+  const width = texture.image.width;
+  const height = texture.image.height;
+  const magenta = closestPaletteIndex(255, 0, 255);
+  const cyan = closestPaletteIndex(0, 255, 255);
+  const white = closestPaletteIndex(255, 255, 255);
+  const cellSize = Math.max(4, Math.floor(Math.min(width, height) / 8));
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const pixel = y * width + x;
+      const border = x < 2 || y < 2 || x >= width - 2 || y >= height - 2;
+      const checker =
+        (Math.floor(x / cellSize) + Math.floor(y / cellSize)) % 2;
+      data[pixel * 2 + 0] = border ? white : (checker === 0 ? magenta : cyan);
+      data[pixel * 2 + 1] = 255;
+    }
+  }
+  texture.needsUpdate = true;
+  return liveTextureResult(texnum, true);
+}
+
+export function R_RestoreLiveWallTexture(name) {
+  const texnum = R_CheckTextureNumForName(String(name).toUpperCase());
+  if (texnum < 0) {
+    return { ok: false, active: false, error: `Texture ${name} not found` };
+  }
+  const original = _liveTextureOriginals.get(texnum);
+  if (original === undefined) {
+    return {
+      ok: false,
+      active: false,
+      error: `Texture ${name} has no saved live-test original`
+    };
+  }
+  const texture = R_GetWallTexture(texnum);
+  texture.image.data.set(original);
+  texture.needsUpdate = true;
+  return liveTextureResult(texnum, false);
 }
 
 // ---------- R_PrecacheLevel ----------

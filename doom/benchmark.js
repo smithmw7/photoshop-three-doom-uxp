@@ -20,7 +20,12 @@
     renderer: "Waiting for WebGL",
     bootStep: "benchmark.js started",
     lastError: "",
-    logs: []
+    logs: [],
+    liveTextureTest: {
+      name: "COMPUTE2",
+      active: false,
+      lastResult: null
+    }
   };
 
   function postToHost(message) {
@@ -100,6 +105,64 @@
 
   window.__doomBenchmarkReportLog = reportLog;
   window.__doomBenchmarkReportError = reportError;
+
+  function runLiveTextureTest(action, textureName = "COMPUTE2") {
+    const apply = action === "apply";
+    const operation = apply
+      ? window.__doomLiveTextureApply
+      : window.__doomLiveTextureRestore;
+    let result;
+    if (typeof operation !== "function") {
+      result = {
+        ok: false,
+        active: false,
+        error: "Doom texture system is not ready"
+      };
+    } else {
+      try {
+        result = operation(textureName);
+      } catch (error) {
+        result = {
+          ok: false,
+          active: false,
+          error: formatDetails(error)
+        };
+      }
+    }
+    state.liveTextureTest.name = textureName;
+    state.liveTextureTest.active = result.ok && result.active === true;
+    state.liveTextureTest.lastResult = result;
+    reportLog(
+      result.ok ? "info" : "warn",
+      result.ok
+        ? (result.active ? "Live texture test applied" : "Live texture restored")
+        : "Live texture test failed",
+      result.ok
+        ? `${result.name} · ${result.width}x${result.height}` +
+          ` · ${result.meshes} meshes · no reload`
+        : result.error
+    );
+    postToHost({
+      type: "liveTextureTest",
+      result
+    });
+    return result;
+  }
+
+  window.__doomBenchmarkRunLiveTextureTest = runLiveTextureTest;
+
+  window.addEventListener("message", (event) => {
+    const data = event.data;
+    if (
+      (window.uxpHost && event.source !== window.uxpHost) ||
+      !data ||
+      data.source !== "three-doom-host" ||
+      data.type !== "liveTextureTest"
+    ) {
+      return;
+    }
+    runLiveTextureTest(data.action, data.texture);
+  });
 
   if (typeof window.fetch === "function") {
     const nativeFetch = window.fetch.bind(window);
@@ -266,6 +329,7 @@
     renderer: state.renderer,
     bootStep: state.bootStep,
     lastError: state.lastError,
+    liveTextureTest: state.liveTextureTest,
     logs: state.logs.slice(-8),
     controls: "WASD move, arrows turn, Ctrl fire, Space use, Esc menu"
   });

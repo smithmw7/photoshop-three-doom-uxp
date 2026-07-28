@@ -21,6 +21,23 @@
         <button id="reloadButton" type="button">Reload Doom</button>
       </header>
 
+      <section class="texture-test" aria-label="Live texture test">
+        <div class="texture-test-copy">
+          <strong>Live texture test · COMPUTE2</strong>
+          <span id="textureTestStatus">
+            This wall texture is directly ahead at the E1M1 start.
+          </span>
+        </div>
+        <div class="texture-test-actions">
+          <button id="applyTextureButton" type="button">
+            Apply test texture
+          </button>
+          <button id="restoreTextureButton" type="button">
+            Restore original
+          </button>
+        </div>
+      </section>
+
       <section class="game-frame" aria-label="Three Doom game">
         <webview
           id="doomView"
@@ -48,7 +65,8 @@
 
       <footer>
         Click inside the game first. WASD moves, arrows turn, Ctrl or mouse
-        fires, Space uses, Shift runs, and Esc opens the menu.
+        fires, Space uses, Shift runs, and Esc opens the menu. Start E1M1 to
+        see the live COMPUTE2 texture test directly ahead.
       </footer>
     </main>
 

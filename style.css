@@ -108,6 +108,53 @@ button {
   font-weight: 700;
 }
 
+.texture-test {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 8px;
+  padding: 7px 8px 7px 10px;
+  background: #20262a;
+  border: 1px solid #4a6657;
+  border-radius: 6px;
+}
+
+.texture-test-copy {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.texture-test-copy strong,
+.texture-test-copy span {
+  display: block;
+}
+
+.texture-test-copy strong {
+  color: #b9f3c8;
+}
+
+.texture-test-copy span {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.texture-test-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 6px;
+  margin-left: 10px;
+}
+
+.texture-test-actions button {
+  min-height: 30px;
+}
+
 .game-frame {
   display: flex;
   flex: 1 1 auto;
