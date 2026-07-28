@@ -10,7 +10,7 @@ WebView's real-time WebGL performance.
 > `agent/live-start-texture` is the experimental development branch for
 > exporting a Doom wall texture into a layered Photoshop document, editing it,
 > and applying the composite back to the running game without reloading the
-> map or WebView. Version 1.6.1 includes a scrolling visual browser for all 125
+> map or WebView. Version 1.6.2 includes a scrolling visual browser for all 125
 > wall textures in the shareware WAD, plus Select, Open, Apply, and Restore
 > controls, with a fixed-height status line. This work has not been merged
 > into `main`.
@@ -142,7 +142,10 @@ documentation.
 
 The picker contains all 125 wall textures defined by the shareware WAD's
 `TEXTURE1` and `TEXTURE2` data. Doom flats and sprites are different WAD
-resource types and are not part of this editor yet.
+resource types and are not part of this editor yet. Textures used by the
+current map are sorted first and marked `LIVE`; the remaining definitions are
+marked `OFF MAP`. Applying an `OFF MAP` texture updates its cached pixels, but
+there is no matching wall in the current level to repaint on screen.
 
 ## Project layout
 

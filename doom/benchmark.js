@@ -35,6 +35,7 @@
       open: false,
       selected: "COMPUTE2",
       count: 0,
+      liveCount: 0,
       rendered: 0
     }
   };
@@ -163,11 +164,13 @@
       result.ok
         ? (
           result.active
-            ? (
-              result.source === "photoshop"
-                ? "Photoshop texture applied"
-                : "Live texture test applied"
-            )
+            ? (result.meshes === 0
+              ? "Texture stored; not used in this map"
+              : (
+                result.source === "photoshop"
+                  ? "Photoshop texture applied"
+                  : "Live texture test applied"
+              ))
             : "Live texture restored"
         )
         : "Live texture test failed",
@@ -253,6 +256,9 @@
     if (texture.name === selectedName) {
       card.classList.add("is-selected");
     }
+    if (texture.meshes === 0) {
+      card.classList.add("is-off-map");
+    }
 
     const canvas = document.createElement("canvas");
     canvas.className = "texture-preview";
@@ -268,7 +274,9 @@
     name.textContent = texture.name;
     const size = document.createElement("span");
     size.className = "texture-card-size";
-    size.textContent = `${texture.width}×${texture.height}`;
+    size.textContent =
+      `${texture.width}×${texture.height} · ` +
+      (texture.meshes > 0 ? `LIVE ${texture.meshes}` : "OFF MAP");
     copy.appendChild(name);
     copy.appendChild(size);
     card.appendChild(copy);
@@ -307,13 +315,16 @@
       );
       state.texturePicker.rendered = index + 1;
       texturePickerCount.textContent =
-        `${state.texturePicker.rendered} / ${textures.length} wall textures`;
+        `${state.texturePicker.liveCount} live · ` +
+        `${state.texturePicker.rendered}/${textures.length} loaded`;
       if ((index + 1) % 8 === 0) {
         await new Promise((resolve) => requestAnimationFrame(resolve));
       }
     }
     if (buildSequence === texturePickerBuildSequence) {
-      texturePickerCount.textContent = `${textures.length} wall textures`;
+      texturePickerCount.textContent =
+        `${state.texturePicker.liveCount} in map · ` +
+        `${textures.length} total`;
     }
   }
 
@@ -335,8 +346,11 @@
     state.texturePicker.open = true;
     state.texturePicker.selected = selectedName;
     state.texturePicker.count = textures.length;
+    state.texturePicker.liveCount =
+      textures.filter((texture) => texture.meshes > 0).length;
     texturePicker.hidden = false;
-    texturePickerCount.textContent = `0 / ${textures.length} wall textures`;
+    texturePickerCount.textContent =
+      `${state.texturePicker.liveCount} live · 0/${textures.length} loaded`;
     const buildSequence = ++texturePickerBuildSequence;
     populateTextureGrid(textures, selectedName, buildSequence).catch((error) => {
       reportError("Texture picker failed", error);

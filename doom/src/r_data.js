@@ -327,13 +327,19 @@ export function R_ListLiveWallTextures() {
       continue;
     }
     seen.add(definition.name);
+    const registeredMeshes = _meshesByTexnum.get(index);
     result.push({
       name: definition.name,
       width: definition.width,
-      height: definition.height
+      height: definition.height,
+      meshes: registeredMeshes === undefined ? 0 : registeredMeshes.size
     });
   }
-  result.sort((left, right) => left.name.localeCompare(right.name));
+  result.sort((left, right) => {
+    const liveOrder =
+      Number(right.meshes > 0) - Number(left.meshes > 0);
+    return liveOrder || left.name.localeCompare(right.name);
+  });
   return result;
 }
 

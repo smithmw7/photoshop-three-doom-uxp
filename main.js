@@ -26,7 +26,8 @@ let copyFeedbackTimer = null;
 let selectedTexture = {
   name: "COMPUTE2",
   width: 256,
-  height: 56
+  height: 56,
+  meshes: 0
 };
 const TEXTURE_STATUS_MAX_CHARACTERS = 44;
 let textureDocument = null;
@@ -362,7 +363,8 @@ window.addEventListener("message", (event) => {
     if (
       typeof texture.name !== "string" ||
       !Number.isFinite(texture.width) ||
-      !Number.isFinite(texture.height)
+      !Number.isFinite(texture.height) ||
+      !Number.isFinite(texture.meshes)
     ) {
       reportTextureHostError(
         "Select Texture failed",
@@ -373,15 +375,15 @@ window.addEventListener("message", (event) => {
     selectedTexture = {
       name: texture.name,
       width: texture.width,
-      height: texture.height
+      height: texture.height,
+      meshes: texture.meshes
     };
     textureRequestSequence += 1;
     textureDocument = null;
     textureNameValue.textContent = selectedTexture.name;
-    setTextureStatus(
-      `${selectedTexture.name} selected · ` +
-      `${selectedTexture.width}×${selectedTexture.height} · Open to edit`
-    );
+    setTextureStatus(selectedTexture.meshes > 0
+      ? `${selectedTexture.name} selected · ${selectedTexture.meshes} live`
+      : `${selectedTexture.name} selected · not in this map`);
     appendLog(
       "info",
       "Wall texture selected",
@@ -394,19 +396,24 @@ window.addEventListener("message", (event) => {
   if (data.type === "liveTextureTest") {
     const result = data.result || {};
     if (result.ok) {
+      const hasLiveMeshes = result.meshes > 0;
       const actionLabel = result.active
-        ? (result.source === "photoshop"
-          ? "Photoshop texture applied"
-          : "Test texture active")
+        ? (hasLiveMeshes
+          ? (result.source === "photoshop"
+            ? "Photoshop texture applied"
+            : "Test texture active")
+          : "Texture stored; not used in this map")
         : "Original restored";
       setTextureStatus(
-        `${actionLabel} · ${result.name} · ${result.meshes} mesh` +
-        (result.meshes === 1 ? "" : "es")
+        hasLiveMeshes || !result.active
+          ? `${actionLabel} · ${result.name} · ${result.meshes} mesh` +
+            (result.meshes === 1 ? "" : "es")
+          : `${result.name} applied · not visible in map`
       );
       appendLog(
-        "info",
+        result.active && !hasLiveMeshes ? "warn" : "info",
         actionLabel,
-        `${result.name} · no WebView reload`
+        `${result.name} · ${result.meshes} live meshes · no WebView reload`
       );
     } else {
       setTextureStatus(

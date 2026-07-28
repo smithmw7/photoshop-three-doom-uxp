@@ -27768,13 +27768,18 @@ void main() {
         continue;
       }
       seen.add(definition.name);
+      const registeredMeshes = _meshesByTexnum.get(index);
       result.push({
         name: definition.name,
         width: definition.width,
-        height: definition.height
+        height: definition.height,
+        meshes: registeredMeshes === void 0 ? 0 : registeredMeshes.size
       });
     }
-    result.sort((left, right) => left.name.localeCompare(right.name));
+    result.sort((left, right) => {
+      const liveOrder = Number(right.meshes > 0) - Number(left.meshes > 0);
+      return liveOrder || left.name.localeCompare(right.name);
+    });
     return result;
   }
   function R_ApplyLiveWallTextureTest(name) {

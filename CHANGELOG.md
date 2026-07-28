@@ -2,6 +2,16 @@
 
 All notable changes to the live texture editing branch are documented here.
 
+## 1.6.2 — Current-map texture visibility
+
+- Added the current map's live mesh count to every texture entry.
+- Sorted textures used by the current map before unused WAD textures.
+- Marked picker cards as `LIVE` or `OFF MAP`.
+- Reported a zero-mesh Apply as stored but not visible in the current map,
+  instead of implying that an on-screen wall was updated.
+- Confirmed that the previously reported `BIGDOOR1` selection has zero meshes
+  in E1M1, while `COMPUTE2` and `BROWN1` each update a live E1M1 mesh.
+
 ## 1.6.1 — Stable texture toolbar height
 
 - Shortened the texture editor's secondary status messages.
