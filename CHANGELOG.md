@@ -11,6 +11,8 @@ All notable changes to the live texture editing branch are documented here.
   instead of implying that an on-screen wall was updated.
 - Confirmed that the previously reported `BIGDOOR1` selection has zero meshes
   in E1M1, while `COMPUTE2` and `BROWN1` each update a live E1M1 mesh.
+- Confirmed the complete Select, Open, Apply, and Restore workflow in the real
+  Photoshop 2026 UXP host.
 
 ## 1.6.1 — Stable texture toolbar height
 

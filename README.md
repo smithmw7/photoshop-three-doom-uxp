@@ -147,6 +147,13 @@ current map are sorted first and marked `LIVE`; the remaining definitions are
 marked `OFF MAP`. Applying an `OFF MAP` texture updates its cached pixels, but
 there is no matching wall in the current level to repaint on screen.
 
+### Photoshop validation
+
+Version 1.6.2 has been tested in Photoshop 2026 with the real UXP bridge.
+Selecting a `LIVE` texture, opening it as a layered Photoshop document,
+applying the edited composite, and restoring the original all update the
+running game without reloading its map or WebView.
+
 ## Project layout
 
 ```text
