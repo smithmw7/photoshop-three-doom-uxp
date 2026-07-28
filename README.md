@@ -10,7 +10,7 @@ WebView's real-time WebGL performance.
 > `agent/live-start-texture` is the experimental development branch for
 > exporting a Doom wall texture into a layered Photoshop document, editing it,
 > and applying the composite back to the running game without reloading the
-> map or WebView. Version 1.6.2 includes a scrolling visual browser for all 125
+> map or WebView. Version 1.7.0 includes a scrolling visual browser for all 125
 > wall textures in the shareware WAD, plus Select, Open, Apply, and Restore
 > controls, with a fixed-height status line. This work has not been merged
 > into `main`.
@@ -104,6 +104,12 @@ The toolbar reports:
 The Boot log shows the WebView load sequence, embedded WAD byte count, renderer
 creation, startup completion, and any errors. Click **Copy log** to place all
 visible log lines on the system clipboard. The log text is also selectable.
+
+**Reload Doom** performs a full reset: it discards every in-memory texture
+replacement, detaches the current Photoshop texture document, resets the
+benchmark and Boot log, and starts a fresh E1M1 game at the opening spawn.
+Photoshop documents created by **Open Texture** remain open and are never
+closed or saved automatically.
 
 ## Experimental Photoshop texture editor
 

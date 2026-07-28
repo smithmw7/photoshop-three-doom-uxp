@@ -2,7 +2,7 @@
   "manifestVersion": 5,
   "id": "com.hightopgames.photoshop-three-doom-benchmark",
   "name": "Three Doom Benchmark",
-  "version": "1.6.2",
+  "version": "1.7.0",
   "main": "index.html",
   "host": {
     "app": "PS",

@@ -2,6 +2,17 @@
 
 All notable changes to the live texture editing branch are documented here.
 
+## 1.7.0 — Full Doom reset
+
+- Changed **Reload Doom** into a complete runtime reset.
+- Reloaded a fresh WebView so every in-memory wall-texture replacement returns
+  to its original WAD pixels.
+- Started a new E1M1 game at the opening spawn instead of returning to the
+  title/demo sequence.
+- Reset the selected texture to `COMPUTE2` and detached any previously tracked
+  Photoshop texture document without closing it.
+- Reset benchmark metrics and cleared the previous session's Boot log.
+
 ## 1.6.2 — Current-map texture visibility
 
 - Added the current map's live mesh count to every texture entry.

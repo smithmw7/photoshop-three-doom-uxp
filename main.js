@@ -285,6 +285,24 @@ function resetStatus() {
   droppedValue.textContent = "Dropped —";
 }
 
+function resetTextureEditorState() {
+  selectedTexture = {
+    name: "COMPUTE2",
+    width: 256,
+    height: 56,
+    meshes: 0
+  };
+  textureDocument = null;
+  textureRequestSequence += 1;
+  textureNameValue.textContent = selectedTexture.name;
+  setTextureStatus("Reset textures · starting E1M1…");
+}
+
+function clearDiagnosticLog() {
+  logLines.length = 0;
+  diagnosticLog.textContent = "";
+}
+
 doomView.addEventListener("loadstart", () => {
   statusValue.textContent = "Local Doom WebView loading…";
   appendLog("info", "WebView load started", "plugin:/doom/index.html");
@@ -430,8 +448,15 @@ window.addEventListener("message", (event) => {
 
 reloadButton.addEventListener("click", () => {
   resetStatus();
-  appendLog("info", "Reload requested");
-  doomView.src = `plugin:/doom/index.html?reload=${Date.now()}`;
+  resetTextureEditorState();
+  clearDiagnosticLog();
+  appendLog(
+    "info",
+    "Full Doom reset requested",
+    "original WAD textures · E1M1"
+  );
+  doomView.src =
+    `plugin:/doom/index.html?-map=E1M1&reload=${Date.now()}`;
 });
 
 selectTextureButton.addEventListener("click", () => {
@@ -485,8 +510,7 @@ copyLogButton.addEventListener("click", async () => {
 });
 
 clearLogButton.addEventListener("click", () => {
-  logLines.length = 0;
-  diagnosticLog.textContent = "";
+  clearDiagnosticLog();
 });
 
 resetStatus();
