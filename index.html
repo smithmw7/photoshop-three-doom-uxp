@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Three Doom Benchmark</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="panel">
+      <header class="toolbar">
+        <div class="title-block">
+          <p class="eyebrow">PHOTOSHOP 2026 · LOCAL WEBVIEW</p>
+          <h1>Three Doom Benchmark</h1>
+        </div>
+        <div class="metrics" aria-live="polite">
+          <span id="statusValue">Loading Doom…</span>
+          <strong id="fpsValue">— FPS</strong>
+          <span id="p95Value">P95 —</span>
+          <span id="droppedValue">Dropped —</span>
+        </div>
+        <button id="reloadButton" type="button">Reload Doom</button>
+      </header>
+
+      <section class="game-frame" aria-label="Three Doom game">
+        <webview
+          id="doomView"
+          width="100%"
+          height="100%"
+          src="plugin:/doom/index.html"
+          uxpAllowInspector="true"
+        ></webview>
+      </section>
+
+      <section class="diagnostics" aria-label="Doom boot diagnostics">
+        <div class="diagnostics-header">
+          <h2>Boot log</h2>
+          <div class="diagnostics-actions">
+            <button id="copyLogButton" type="button">Copy log</button>
+            <button id="clearLogButton" type="button">Clear log</button>
+          </div>
+        </div>
+        <pre
+          id="diagnosticLog"
+          tabindex="0"
+          aria-label="Boot log text"
+        >Waiting for WebView events…</pre>
+      </section>
+
+      <footer>
+        Click inside the game first. WASD moves, arrows turn, Ctrl or mouse
+        fires, Space uses, Shift runs, and Esc opens the menu.
+      </footer>
+    </main>
+
+    <script src="main.js"></script>
+  </body>
+</html>
