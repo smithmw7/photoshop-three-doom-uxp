@@ -2,6 +2,18 @@
 
 All notable changes to the live texture editing branch are documented here.
 
+## 1.6.0 — Wall-texture browser
+
+- Added a **Select Texture** button and an in-game scrolling thumbnail grid.
+- Listed all 125 wall textures defined by the shareware WAD.
+- Added a thumbnail, name, and dimensions for every texture.
+- Made Open, Apply, and Restore target the current selection instead of the
+  fixed `COMPUTE2` texture.
+- Preserved previously opened Photoshop documents when changing selections
+  while safely detaching them from the editor controls.
+- Kept selection and texture updates inside the existing local UXP WebView
+  message bridge.
+
 ## 1.5.1 — Photoshop modal-scope fix
 
 - Moved the Photoshop composite pixel read into a short

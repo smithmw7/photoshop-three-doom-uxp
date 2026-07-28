@@ -111,6 +111,7 @@ button {
 .texture-test {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   width: 100%;
   min-height: 48px;
   margin-top: 8px;
@@ -135,6 +136,10 @@ button {
   color: #b9f3c8;
 }
 
+.texture-test-copy strong span {
+  display: inline;
+}
+
 .texture-test-copy span {
   margin-top: 2px;
   overflow: hidden;
@@ -146,6 +151,7 @@ button {
 .texture-test-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   flex: 0 0 auto;
   gap: 6px;
   margin-left: 10px;
@@ -153,6 +159,8 @@ button {
 
 .texture-test-actions button {
   min-height: 30px;
+  padding-right: 8px;
+  padding-left: 8px;
 }
 
 .game-frame {

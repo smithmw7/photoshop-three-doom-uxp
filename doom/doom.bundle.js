@@ -27514,6 +27514,7 @@ void main() {
     R_InitFlats: () => R_InitFlats,
     R_InitSpriteLumps: () => R_InitSpriteLumps,
     R_InitTextures: () => R_InitTextures,
+    R_ListLiveWallTextures: () => R_ListLiveWallTextures,
     R_PrecacheLevel: () => R_PrecacheLevel,
     R_RegisterFlatMesh: () => R_RegisterFlatMesh,
     R_RegisterWallMesh: () => R_RegisterWallMesh,
@@ -27754,6 +27755,27 @@ void main() {
       height: definition.height,
       meshes: meshes === void 0 ? 0 : meshes.size
     };
+  }
+  function R_ListLiveWallTextures() {
+    if (!textures) {
+      return [];
+    }
+    const seen = /* @__PURE__ */ new Set();
+    const result = [];
+    for (let index = 0; index < numtextures; index++) {
+      const definition = textures[index];
+      if (!definition || !definition.name || definition.width <= 0 || definition.height <= 0 || seen.has(definition.name)) {
+        continue;
+      }
+      seen.add(definition.name);
+      result.push({
+        name: definition.name,
+        width: definition.width,
+        height: definition.height
+      });
+    }
+    result.sort((left, right) => left.name.localeCompare(right.name));
+    return result;
   }
   function R_ApplyLiveWallTextureTest(name) {
     const texnum = R_CheckTextureNumForName(String(name).toUpperCase());
@@ -67366,6 +67388,7 @@ void main() {
     const playpal = W_CacheLumpName("PLAYPAL", 0);
     I_SetPalette(playpal);
     R_InitData();
+    window.__doomLiveTextureList = () => R_ListLiveWallTextures();
     window.__doomLiveTextureApply = (name = "COMPUTE2") => R_ApplyLiveWallTextureTest(name);
     window.__doomLiveTextureExport = (name = "COMPUTE2") => R_ExportLiveWallTexture(name);
     window.__doomLiveTextureApplyPixels = (name = "COMPUTE2", width, height, rgba) => R_ApplyLiveWallTexturePixels(name, width, height, rgba);

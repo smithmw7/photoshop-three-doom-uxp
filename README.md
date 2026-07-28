@@ -10,8 +10,9 @@ WebView's real-time WebGL performance.
 > `agent/live-start-texture` is the experimental development branch for
 > exporting a Doom wall texture into a layered Photoshop document, editing it,
 > and applying the composite back to the running game without reloading the
-> map or WebView. The current milestone supports `COMPUTE2` with Open, Apply,
-> and Restore controls. This work has not been merged into `main`.
+> map or WebView. Version 1.6.0 adds a scrolling visual browser for all 125
+> wall textures in the shareware WAD, plus Select, Open, Apply, and Restore
+> controls. This work has not been merged into `main`.
 >
 > See [CHANGELOG.md](CHANGELOG.md) for the branch history.
 
@@ -48,6 +49,7 @@ WebGL. This plugin runs the game in a local UXP WebView and provides:
 - WebView load, startup, resource, JavaScript, and stalled-boot diagnostics
 - An experimental layered Photoshop wall-texture editor with no-reload Apply
   and Restore
+- A scrolling visual browser for every wall texture defined by the WAD
 
 No remote network access is required while the plugin is running.
 
@@ -104,18 +106,23 @@ visible log lines on the system clipboard. The log text is also selectable.
 
 ## Experimental Photoshop texture editor
 
-Start a new game on E1M1. The `COMPUTE2` wall texture is directly ahead of the
-player at the opening spawn.
-
-1. Click **Open Texture**. The plugin creates a 256×56, 8-bit RGB Photoshop
-   document containing `COMPUTE2`, an original texture layer, and an empty
+1. Click **Select Texture** to open the scrolling wall-texture grid over the
+   game.
+2. Click a thumbnail. The grid closes and the selected name and dimensions
+   appear in the Photoshop panel.
+3. Click **Open Texture**. The plugin creates a correctly sized, 8-bit RGB
+   Photoshop document with an original texture layer and an empty
    **Your edits** pixel layer.
-2. Edit that document with normal Photoshop layers.
-3. Click **Apply Texture**. The plugin reads the document composite, converts
+4. Edit that document with normal Photoshop layers.
+5. Click **Apply Texture**. The plugin reads the document composite, converts
    its RGB pixels to the nearest colors in Doom's original 256-color palette,
-   and updates every live wall mesh using `COMPUTE2`.
-4. Click **Restore original** to restore the indexed pixels loaded from the
-   WAD.
+   and updates every live wall mesh using the selected texture.
+6. Click **Restore** after applying to restore the indexed pixels loaded from
+   the WAD.
+
+Selecting another texture leaves any previously opened Photoshop document
+untouched, but detaches it from the editor controls. Click **Open Texture** to
+create and track an editable document for the new selection.
 
 The editable document stays RGB because Photoshop's Indexed Color mode limits
 layered editing. Palette conversion happens only when applying the composite
@@ -126,6 +133,15 @@ saved automatically. Apply and Restore mutate the existing cached Three.js
 Photoshop's host requires the composite `imaging.getPixels()` read to execute
 inside a short modal scope. The pixel buffer is copied and disposed before the
 modal scope ends; palette conversion and the WebView update happen afterward.
+The implementation follows Adobe's current
+[Imaging API](https://developer.adobe.com/photoshop/uxp/2022/ps-reference/media/imaging/)
+and
+[`executeAsModal`](https://developer.adobe.com/photoshop/uxp/2022/ps-reference/media/executeasmodal/)
+documentation.
+
+The picker contains all 125 wall textures defined by the shareware WAD's
+`TEXTURE1` and `TEXTURE2` data. Doom flats and sprites are different WAD
+resource types and are not part of this editor yet.
 
 ## Project layout
 

@@ -5,6 +5,11 @@
   const SAMPLE_CAPACITY = 600;
   const intervals = new Float64Array(SAMPLE_CAPACITY);
   const hud = document.getElementById("benchmarkHud");
+  const texturePicker = document.getElementById("texturePicker");
+  const texturePickerCount = document.getElementById("texturePickerCount");
+  const texturePickerClose = document.getElementById("texturePickerClose");
+  const textureGrid = document.getElementById("textureGrid");
+  let texturePickerBuildSequence = 0;
 
   const state = {
     phase: "booting",
@@ -25,6 +30,12 @@
       name: "COMPUTE2",
       active: false,
       lastResult: null
+    },
+    texturePicker: {
+      open: false,
+      selected: "COMPUTE2",
+      count: 0,
+      rendered: 0
     }
   };
 
@@ -207,17 +218,165 @@
     return result;
   }
 
+  function closeTexturePicker() {
+    texturePicker.hidden = true;
+    state.texturePicker.open = false;
+  }
+
+  function selectWallTexture(texture, card) {
+    state.texturePicker.selected = texture.name;
+    const previous = textureGrid.querySelector(".texture-card.is-selected");
+    if (previous) {
+      previous.classList.remove("is-selected");
+    }
+    card.classList.add("is-selected");
+    closeTexturePicker();
+    reportLog(
+      "info",
+      "Wall texture selected",
+      `${texture.name} · ${texture.width}x${texture.height}`
+    );
+    postToHost({
+      type: "liveTextureSelected",
+      texture
+    });
+  }
+
+  function createTextureCard(texture, selectedName) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "texture-card";
+    card.setAttribute("role", "listitem");
+    card.dataset.textureName = texture.name;
+    card.title =
+      `Select ${texture.name} (${texture.width}×${texture.height})`;
+    if (texture.name === selectedName) {
+      card.classList.add("is-selected");
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.className = "texture-preview";
+    canvas.width = texture.width;
+    canvas.height = texture.height;
+    canvas.setAttribute("aria-hidden", "true");
+    card.appendChild(canvas);
+
+    const copy = document.createElement("span");
+    copy.className = "texture-card-copy";
+    const name = document.createElement("span");
+    name.className = "texture-card-name";
+    name.textContent = texture.name;
+    const size = document.createElement("span");
+    size.className = "texture-card-size";
+    size.textContent = `${texture.width}×${texture.height}`;
+    copy.appendChild(name);
+    copy.appendChild(size);
+    card.appendChild(copy);
+
+    try {
+      const result = window.__doomLiveTextureExport(texture.name);
+      if (result && result.ok) {
+        const context = canvas.getContext("2d");
+        const image = context.createImageData(texture.width, texture.height);
+        image.data.set(result.rgba);
+        context.putImageData(image, 0, 0);
+      }
+    } catch (error) {
+      card.title = `${card.title} · Preview failed: ${formatDetails(error)}`;
+    }
+
+    card.addEventListener("click", () => {
+      selectWallTexture(texture, card);
+    });
+    return card;
+  }
+
+  async function populateTextureGrid(
+    textures,
+    selectedName,
+    buildSequence
+  ) {
+    textureGrid.textContent = "";
+    state.texturePicker.rendered = 0;
+    for (let index = 0; index < textures.length; index += 1) {
+      if (buildSequence !== texturePickerBuildSequence) {
+        return;
+      }
+      textureGrid.appendChild(
+        createTextureCard(textures[index], selectedName)
+      );
+      state.texturePicker.rendered = index + 1;
+      texturePickerCount.textContent =
+        `${state.texturePicker.rendered} / ${textures.length} wall textures`;
+      if ((index + 1) % 8 === 0) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+    }
+    if (buildSequence === texturePickerBuildSequence) {
+      texturePickerCount.textContent = `${textures.length} wall textures`;
+    }
+  }
+
+  function showTexturePicker(selectedName = state.texturePicker.selected) {
+    let textures;
+    if (typeof window.__doomLiveTextureList !== "function") {
+      reportError(
+        "Texture picker unavailable",
+        "Doom texture system is not ready"
+      );
+      return;
+    }
+    try {
+      textures = window.__doomLiveTextureList();
+    } catch (error) {
+      reportError("Texture picker failed", error);
+      return;
+    }
+    state.texturePicker.open = true;
+    state.texturePicker.selected = selectedName;
+    state.texturePicker.count = textures.length;
+    texturePicker.hidden = false;
+    texturePickerCount.textContent = `0 / ${textures.length} wall textures`;
+    const buildSequence = ++texturePickerBuildSequence;
+    populateTextureGrid(textures, selectedName, buildSequence).catch((error) => {
+      reportError("Texture picker failed", error);
+    });
+  }
+
   window.__doomBenchmarkRunLiveTextureTest = runLiveTextureTest;
   window.__doomBenchmarkExportLiveTexture = exportLiveTexture;
+  window.__doomBenchmarkShowTexturePicker = showTexturePicker;
+
+  texturePickerClose.addEventListener("click", closeTexturePicker);
+  ["pointerdown", "pointerup", "mousedown", "mouseup", "click"].forEach(
+    (eventName) => {
+      texturePicker.addEventListener(eventName, (event) => {
+        event.stopPropagation();
+      });
+    }
+  );
+  window.addEventListener("keydown", (event) => {
+    if (state.texturePicker.open && event.key === "Escape") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeTexturePicker();
+    }
+  }, true);
 
   window.addEventListener("message", (event) => {
     const data = event.data;
     if (
       (window.uxpHost && event.source !== window.uxpHost) ||
       !data ||
-      data.source !== "three-doom-host" ||
-      data.type !== "liveTextureTest"
+      data.source !== "three-doom-host"
     ) {
+      return;
+    }
+    if (data.type === "texturePicker" && data.action === "show") {
+      showTexturePicker(data.selected);
+      return;
+    }
+    if (data.type !== "liveTextureTest") {
       return;
     }
     if (data.action === "export") {
@@ -393,6 +552,7 @@
     bootStep: state.bootStep,
     lastError: state.lastError,
     liveTextureTest: state.liveTextureTest,
+    texturePicker: state.texturePicker,
     logs: state.logs.slice(-8),
     controls: "WASD move, arrows turn, Ctrl fire, Space use, Esc menu"
   });

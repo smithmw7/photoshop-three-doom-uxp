@@ -23,12 +23,17 @@
 
       <section class="texture-test" aria-label="Live texture test">
         <div class="texture-test-copy">
-          <strong>Photoshop texture editor · COMPUTE2</strong>
+          <strong>
+            Photoshop wall texture · <span id="textureNameValue">COMPUTE2</span>
+          </strong>
           <span id="textureTestStatus">
-            Open an RGB copy, edit with layers, then apply its composite.
+            Select a wall texture, open an RGB copy, then apply its composite.
           </span>
         </div>
         <div class="texture-test-actions">
+          <button id="selectTextureButton" type="button">
+            Select Texture
+          </button>
           <button id="openTextureButton" type="button">
             Open Texture
           </button>
@@ -36,7 +41,7 @@
             Apply Texture
           </button>
           <button id="restoreTextureButton" type="button">
-            Restore original
+            Restore
           </button>
         </div>
       </section>
@@ -68,8 +73,8 @@
 
       <footer>
         Click inside the game first. WASD moves, arrows turn, Ctrl or mouse
-        fires, Space uses, Shift runs, and Esc opens the menu. Start E1M1 to
-        see COMPUTE2 directly ahead.
+        fires, Space uses, Shift runs, and Esc opens the menu. Select Texture
+        opens the complete WAD wall-texture grid.
       </footer>
     </main>
 

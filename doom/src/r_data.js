@@ -309,6 +309,34 @@ function liveTextureResult(texnum, active) {
   };
 }
 
+export function R_ListLiveWallTextures() {
+  if (!textures) {
+    return [];
+  }
+  const seen = new Set();
+  const result = [];
+  for (let index = 0; index < numtextures; index++) {
+    const definition = textures[index];
+    if (
+      !definition ||
+      !definition.name ||
+      definition.width <= 0 ||
+      definition.height <= 0 ||
+      seen.has(definition.name)
+    ) {
+      continue;
+    }
+    seen.add(definition.name);
+    result.push({
+      name: definition.name,
+      width: definition.width,
+      height: definition.height
+    });
+  }
+  result.sort((left, right) => left.name.localeCompare(right.name));
+  return result;
+}
+
 // Proof-of-concept live wall replacement. The cached RG8 DataTexture is
 // mutated in place, so every existing material that references it sees the
 // change on the next WebGL upload without rebuilding the map or WebView.

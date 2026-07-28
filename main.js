@@ -13,6 +13,8 @@ const fpsValue = document.getElementById("fpsValue");
 const p95Value = document.getElementById("p95Value");
 const droppedValue = document.getElementById("droppedValue");
 const textureTestStatus = document.getElementById("textureTestStatus");
+const textureNameValue = document.getElementById("textureNameValue");
+const selectTextureButton = document.getElementById("selectTextureButton");
 const openTextureButton = document.getElementById("openTextureButton");
 const applyTextureButton = document.getElementById("applyTextureButton");
 const restoreTextureButton = document.getElementById("restoreTextureButton");
@@ -21,17 +23,34 @@ const copyLogButton = document.getElementById("copyLogButton");
 const clearLogButton = document.getElementById("clearLogButton");
 const logLines = [];
 let copyFeedbackTimer = null;
-const LIVE_TEXTURE_NAME = "COMPUTE2";
+let selectedTexture = {
+  name: "COMPUTE2",
+  width: 256,
+  height: 56
+};
 let textureDocument = null;
 let textureRequestSequence = 0;
 
-function sendTextureAction(action, extra = {}) {
+function sendTextureAction(
+  action,
+  extra = {},
+  textureName = selectedTexture.name
+) {
   doomView.postMessage({
     source: "three-doom-host",
     type: "liveTextureTest",
     action,
-    texture: LIVE_TEXTURE_NAME,
+    texture: textureName,
     ...extra
+  });
+}
+
+function showTexturePicker() {
+  doomView.postMessage({
+    source: "three-doom-host",
+    type: "texturePicker",
+    action: "show",
+    selected: selectedTexture.name
   });
 }
 
@@ -219,7 +238,7 @@ async function applyTextureDocument() {
     width: textureDocument.width,
     height: textureDocument.height,
     rgba: Array.from(rgba)
-  });
+  }, textureDocument.name);
 }
 
 function reportTextureHostError(message, error) {
@@ -328,6 +347,40 @@ window.addEventListener("message", (event) => {
     return;
   }
 
+  if (data.type === "liveTextureSelected") {
+    const texture = data.texture || {};
+    if (
+      typeof texture.name !== "string" ||
+      !Number.isFinite(texture.width) ||
+      !Number.isFinite(texture.height)
+    ) {
+      reportTextureHostError(
+        "Select Texture failed",
+        "The game returned invalid texture metadata."
+      );
+      return;
+    }
+    selectedTexture = {
+      name: texture.name,
+      width: texture.width,
+      height: texture.height
+    };
+    textureRequestSequence += 1;
+    textureDocument = null;
+    textureNameValue.textContent = selectedTexture.name;
+    textureTestStatus.textContent =
+      `Selected ${selectedTexture.name} · ` +
+      `${selectedTexture.width}×${selectedTexture.height} · ` +
+      "click Open Texture to edit it.";
+    appendLog(
+      "info",
+      "Wall texture selected",
+      `${selectedTexture.name} · ${selectedTexture.width}×` +
+      selectedTexture.height
+    );
+    return;
+  }
+
   if (data.type === "liveTextureTest") {
     const result = data.result || {};
     if (result.ok) {
@@ -365,10 +418,15 @@ reloadButton.addEventListener("click", () => {
   doomView.src = `plugin:/doom/index.html?reload=${Date.now()}`;
 });
 
+selectTextureButton.addEventListener("click", () => {
+  textureTestStatus.textContent = "Opening wall-texture grid…";
+  showTexturePicker();
+});
+
 openTextureButton.addEventListener("click", () => {
   textureRequestSequence += 1;
   textureTestStatus.textContent =
-    `Reading ${LIVE_TEXTURE_NAME} from the running game…`;
+    `Reading ${selectedTexture.name} from the running game…`;
   sendTextureAction("export", {
     requestId: textureRequestSequence
   });
@@ -382,7 +440,7 @@ applyTextureButton.addEventListener("click", () => {
 
 restoreTextureButton.addEventListener("click", () => {
   textureTestStatus.textContent =
-    `Restoring original ${LIVE_TEXTURE_NAME}…`;
+    `Restoring original ${selectedTexture.name}…`;
   sendTextureAction("restore");
 });
 

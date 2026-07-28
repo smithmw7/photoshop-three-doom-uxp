@@ -17,6 +17,7 @@ import {
   R_FlatNumForName,
   R_PrecacheLevel,
   R_ApplyLiveWallTextureTest,
+  R_ListLiveWallTextures,
   R_ExportLiveWallTexture,
   R_ApplyLiveWallTexturePixels,
   R_RestoreLiveWallTexture,
@@ -445,6 +446,7 @@ export async function D_DoomMain() {
 
   // Init rendering data (textures/flats/sprites/colormaps).
   R_InitData();
+  window.__doomLiveTextureList = () => R_ListLiveWallTextures();
   window.__doomLiveTextureApply = (name = 'COMPUTE2') =>
     R_ApplyLiveWallTextureTest(name);
   window.__doomLiveTextureExport = (name = 'COMPUTE2') =>
