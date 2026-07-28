@@ -2,6 +2,15 @@
 
 All notable changes to the live texture editing branch are documented here.
 
+## 1.6.1 — Stable texture toolbar height
+
+- Shortened the texture editor's secondary status messages.
+- Reduced the status font to 9 px and fixed the line height at 11 px.
+- Capped visible status text at 44 characters with an ellipsis.
+- Preserved the full uncropped message in the tooltip and Boot log.
+- Prevented long status and error text from wrapping or changing the panel
+  layout.
+
 ## 1.6.0 — Wall-texture browser
 
 - Added a **Select Texture** button and an in-game scrolling thumbnail grid.

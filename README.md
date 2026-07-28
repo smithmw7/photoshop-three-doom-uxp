@@ -10,9 +10,10 @@ WebView's real-time WebGL performance.
 > `agent/live-start-texture` is the experimental development branch for
 > exporting a Doom wall texture into a layered Photoshop document, editing it,
 > and applying the composite back to the running game without reloading the
-> map or WebView. Version 1.6.0 adds a scrolling visual browser for all 125
+> map or WebView. Version 1.6.1 includes a scrolling visual browser for all 125
 > wall textures in the shareware WAD, plus Select, Open, Apply, and Restore
-> controls. This work has not been merged into `main`.
+> controls, with a fixed-height status line. This work has not been merged
+> into `main`.
 >
 > See [CHANGELOG.md](CHANGELOG.md) for the branch history.
 

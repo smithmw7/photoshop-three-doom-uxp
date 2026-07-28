@@ -28,8 +28,20 @@ let selectedTexture = {
   width: 256,
   height: 56
 };
+const TEXTURE_STATUS_MAX_CHARACTERS = 44;
 let textureDocument = null;
 let textureRequestSequence = 0;
+
+function setTextureStatus(message) {
+  const fullMessage = String(message).replace(/\s+/g, " ").trim();
+  const clippedMessage =
+    fullMessage.length > TEXTURE_STATUS_MAX_CHARACTERS
+      ? `${fullMessage.slice(0, TEXTURE_STATUS_MAX_CHARACTERS - 1).trim()}…`
+      : fullMessage;
+  textureTestStatus.textContent = clippedMessage;
+  textureTestStatus.title = fullMessage;
+  textureTestStatus.setAttribute("aria-label", fullMessage);
+}
 
 function sendTextureAction(
   action,
@@ -172,9 +184,9 @@ async function openTextureDocument(result) {
     width: result.width,
     height: result.height
   };
-  textureTestStatus.textContent =
-    `Editing ${createdDocument.title} · ${result.width}×${result.height}` +
-    " RGB · layered";
+  setTextureStatus(
+    `Editing ${result.name} · ${result.width}×${result.height} RGB`
+  );
   appendLog(
     "info",
     "Texture opened in Photoshop",
@@ -204,8 +216,7 @@ async function applyTextureDocument() {
     );
   }
 
-  textureTestStatus.textContent =
-    `Reading ${textureDocument.name} composite pixels…`;
+  setTextureStatus(`Reading ${textureDocument.name} pixels…`);
   let rgba;
   await core.executeAsModal(async () => {
     const imageObject = await imaging.getPixels({
@@ -232,8 +243,7 @@ async function applyTextureDocument() {
     commandName: `Read Doom texture ${textureDocument.name}`,
     timeOut: 5000
   });
-  textureTestStatus.textContent =
-    `Quantizing ${textureDocument.name} to the Doom palette…`;
+  setTextureStatus(`Applying ${textureDocument.name}…`);
   sendTextureAction("applyPixels", {
     width: textureDocument.width,
     height: textureDocument.height,
@@ -243,7 +253,7 @@ async function applyTextureDocument() {
 
 function reportTextureHostError(message, error) {
   const details = error && error.message ? error.message : String(error);
-  textureTestStatus.textContent = `${message}: ${details}`;
+  setTextureStatus(`${message} · ${details}`);
   appendLog("error", message, details);
 }
 
@@ -368,10 +378,10 @@ window.addEventListener("message", (event) => {
     textureRequestSequence += 1;
     textureDocument = null;
     textureNameValue.textContent = selectedTexture.name;
-    textureTestStatus.textContent =
-      `Selected ${selectedTexture.name} · ` +
-      `${selectedTexture.width}×${selectedTexture.height} · ` +
-      "click Open Texture to edit it.";
+    setTextureStatus(
+      `${selectedTexture.name} selected · ` +
+      `${selectedTexture.width}×${selectedTexture.height} · Open to edit`
+    );
     appendLog(
       "info",
       "Wall texture selected",
@@ -389,20 +399,19 @@ window.addEventListener("message", (event) => {
           ? "Photoshop texture applied"
           : "Test texture active")
         : "Original restored";
-      textureTestStatus.textContent =
-        `${actionLabel} · ${result.name} ${result.width}×${result.height}` +
-        ` · ${result.meshes} live wall mesh${result.meshes === 1 ? "" : "es"}` +
-        (result.paletteColors
-          ? ` · ${result.paletteColors} palette colors`
-          : "");
+      setTextureStatus(
+        `${actionLabel} · ${result.name} · ${result.meshes} mesh` +
+        (result.meshes === 1 ? "" : "es")
+      );
       appendLog(
         "info",
         actionLabel,
         `${result.name} · no WebView reload`
       );
     } else {
-      textureTestStatus.textContent =
-        `Texture test failed: ${result.error || "unknown error"}`;
+      setTextureStatus(
+        `Texture failed · ${result.error || "unknown error"}`
+      );
       appendLog(
         "error",
         "Live texture test failed",
@@ -419,14 +428,13 @@ reloadButton.addEventListener("click", () => {
 });
 
 selectTextureButton.addEventListener("click", () => {
-  textureTestStatus.textContent = "Opening wall-texture grid…";
+  setTextureStatus("Choose a wall texture…");
   showTexturePicker();
 });
 
 openTextureButton.addEventListener("click", () => {
   textureRequestSequence += 1;
-  textureTestStatus.textContent =
-    `Reading ${selectedTexture.name} from the running game…`;
+  setTextureStatus(`Reading ${selectedTexture.name} game pixels…`);
   sendTextureAction("export", {
     requestId: textureRequestSequence
   });
@@ -439,8 +447,7 @@ applyTextureButton.addEventListener("click", () => {
 });
 
 restoreTextureButton.addEventListener("click", () => {
-  textureTestStatus.textContent =
-    `Restoring original ${selectedTexture.name}…`;
+  setTextureStatus(`Restoring ${selectedTexture.name}…`);
   sendTextureAction("restore");
 });
 
@@ -476,4 +483,5 @@ clearLogButton.addEventListener("click", () => {
 });
 
 resetStatus();
+setTextureStatus(textureTestStatus.textContent);
 appendLog("info", "UXP host logger ready");
