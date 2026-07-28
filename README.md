@@ -5,6 +5,16 @@ WebView's real-time WebGL performance.
 
 ![Three Doom running in the Photoshop UXP benchmark](PREVIEW.png)
 
+> **Branch focus — live Photoshop texture editing**
+>
+> `agent/live-start-texture` is the experimental development branch for
+> exporting a Doom wall texture into a layered Photoshop document, editing it,
+> and applying the composite back to the running game without reloading the
+> map or WebView. The current milestone supports `COMPUTE2` with Open, Apply,
+> and Restore controls. This work has not been merged into `main`.
+>
+> See [CHANGELOG.md](CHANGELOG.md) for the branch history.
+
 ## Three.js Doom port and credits
 
 This project embeds and adapts
@@ -36,7 +46,8 @@ WebGL. This plugin runs the game in a local UXP WebView and provides:
 - WebGL version and retained-frame status
 - A visible boot log with a one-click **Copy log** button
 - WebView load, startup, resource, JavaScript, and stalled-boot diagnostics
-- An experimental no-reload wall-texture Apply/Restore proof
+- An experimental layered Photoshop wall-texture editor with no-reload Apply
+  and Restore
 
 No remote network access is required while the plugin is running.
 
